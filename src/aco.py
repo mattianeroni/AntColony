@@ -1,6 +1,7 @@
 import random
 import numpy as np
 import time
+import operator
 import collections
 
 
@@ -64,6 +65,8 @@ class AntColony (object):
         self.max_noimp = max_noimp
         self.print_every = print_every
         self.pher_init = pher_init
+        self.max_iter_wu = max_iter_wu
+        self.ro_wu = ro_wu
 
         # Initialize the best
         self.best = list(self.picking_list)
@@ -80,6 +83,36 @@ class AntColony (object):
         self.computations = 0
         self.computational_time = 0.0
 
+        for _ in range(max_iter_wu):
+            
+
+
+    def reset (self):
+        """
+        This method resets the algorithm.
+        """
+        # Initialize the best
+        self.best = list(self.picking_list)
+        random.shuffle(self.best)
+        self.vbest = _compute_distance (self.best, distances)
+
+        # Initialize the pheromone
+        self.pheromone = np.full(distances.shape, pher_init)
+        np.fill_diagonal(self.pheromone, 0)
+
+        # Initialize the history and the number of iterations needed to find the best
+        # and other statistics.
+        self.history = collections.deque((self.vbest,))
+        self.computations = 0
+        self.computational_time = 0.0
+
+
+    def warmup (self):
+        """
+        This method is the warmup designed for the pheromone matrix.
+        """
+        pass
+
 
     def _evap (self):
         """
@@ -91,23 +124,19 @@ class AntColony (object):
     def _update (self):
         """
         This method updates the pheromone on the best path.
-        In the next iterations, higher is the pheromone on an arc, greater is the
-        possibility to select it.
         """
         for i in range (len(self.picking_list) - 1):
-            self.pheromone[self.best[i]][self.best[i + 1]] += (self.Q / self.distances[self.best[i]][self.best[i + 1]])
-        self.pheromone[0][self.best[0]] += (self.Q / self.distances[0][self.best[0]])
-        self.pheromone[self.best[-1]][0] += (self.Q / self.distances[self.best[-1]][0])
+            self.pheromone[self.best[i], self.best[i + 1]] += (self.Q / self.distances[self.best[i], self.best[i + 1]])
+        self.pheromone[0, self.best[0]] += (self.Q / self.distances[0, self.best[0]])
+        self.pheromone[self.best[-1], 0] += (self.Q / self.distances[self.best[-1], 0])
 
-'''
-    def _next_node (self, options : List[Tuple[int,float]]) -> int:
+
+    def _next_node (self, options):
         """
         This method returns the next node during the constructing process that
         brings to a new solution.
-
         The node is selected in a list of possible <options>. Each option is given
         by a tuple containing (the node, its desirability).
-
         Given i the current node, the desirability of node j (i.e. d(j)) is
         calculated as follows:
 
@@ -119,69 +148,43 @@ class AntColony (object):
         The probability to select a node is calculated dividing its desirability
         for the total desirability of all the options.
 
-
         :param options: List of tuples (node, desirability of node).
         :return: The selected node.
 
         """
-        p : float = 0.0
+        p = 0.0
         r = random.random()
-        total = sum (op[1] for op in sorted(options, key=lambda i : i[1], reverse=True))
+        options.sort(key=operator.itemgetter(1), reverse=True)
+        total = sum(desirability for _, desirability in options)
 
-        for op, prob in options:
-            p += prob/total
-            if r < p:
+        for op, desirability in options:
+            prob += desirability / total
+            if r < prob:
                 return op
         return -1
 
 
-    def _new_solution (self) -> Tuple[List[int], int]:
+    def _new_solution (self):
         """
         This method construct node by node a new solution.
-
-        :return: The new solution and its cost.
-
         """
         c_node = 0
-        new_sol : List[int] = []; vnew_sol : int = 0
-        tabu : Set[int] = {0}
-        options : List[int] = list(self.picking_list)
+        new_sol, vnew_sol = [], 0
+        options = list(self.picking_list)
 
         for i in range (len(self.picking_list)):
-            options_params : List[Tuple[int,float]] = [(op, self.pheromone[c_node][op]**self.alpha / self.distances[c_node][op]**self.beta) for op in options]
+            options_params = [(op, self.pheromone[c_node, op]**self.alpha / self.distances[c_node, op]**self.beta) for op in options]
             n_node = self._next_node (options_params)
-            tabu.add (n_node)
             new_sol.append(n_node)
             options.remove (n_node)
-            vnew_sol += self.distances[c_node][n_node]
+            vnew_sol += self.distances[c_node, n_node]
             c_node = n_node
-        vnew_sol += self.distances[c_node][0]o
+        vnew_sol += self.distances[c_node, 0]
 
         return new_sol, vnew_sol
 
 
-    def reset (self):
-        # Initialize the best
-        self.best = list(self.picking_list)
-        random.shuffle(self.best)
-        self.vbest = _compute_distance (self.best, self.distances)
-
-        # Initialize the pheromone
-        for i in self.distances:
-            for j in self.distances:
-                if i != j:
-                    self.pheromone[i][j] = self.pher_init
-                else:
-                    self.pheromone[i][j] = 0
-
-        # Initialize the history and the number of iterationso
-        # needed to find the best.
-        self.history = [self.vbest]
-        self.computations = 0
-        self.computational_time = 0.0
-
-
-    def run (self, verbose : bool = False) -> Tuple[List[int], int]:
+    def run (self, verbose = False):
         """
         This method represents the execution of the algorithm.
 
@@ -190,21 +193,19 @@ class AntColony (object):
 
         """
         start = time.time()
-        noimp : int = 0
+        noimp = 0
         for i in range (self.max_iter):
-
             # Build a new solution
             new_sol, vnew_sol = self._new_solution ()
-
             # Eventually evaporate pheromone
             if self.evaporate is True:
                 self._evap ()
-
             # Eventually update best, iterations with no improvement
             # and computations needed to find the best.
             if vnew_sol < self.vbest:
                 self.best, self.vbest = new_sol, vnew_sol
-                self._evap ()
+                if self.evaporate is False:
+                    self._evap ()
                 self._update ()
                 noimp = 0
                 self.computations = i
@@ -214,14 +215,12 @@ class AntColony (object):
                     break
 
             # Update history
-            self.history.append (self.vbest)
-
+            self.history.append(self.vbest)
             # Logs
             if verbose is True and i % self.print_every == 0:
-                print('Epoch', i, ' Best: ', self.vbest)
+                print('Epoch: ', i, ', Best: ', self.vbest)
 
         # Set computational time
         self.computational_time = time.time() - start
-
+        # Return the best solution found
         return self.best, self.vbest
-'''
