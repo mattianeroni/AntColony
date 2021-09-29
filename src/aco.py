@@ -4,6 +4,8 @@ import time
 import operator
 import collections
 
+from mst import MinimalSpanningTree
+
 
 def _compute_distance (lst, distances):
     """
@@ -23,9 +25,9 @@ class AntColony (object):
     This is the Ant Colony Optimization algorithm with Warm-Up.
     """
     def __init__ (self, distances, picking_list,
-                pher_init = 0.1, ro = 0.9, Q = 100.0, alpha = 1.0, beta = 5.0,
+                pher_init = 0.1, ro = 0.9, Q = 100.0, alpha = 1.0, beta = 2.0,
                 evaporate = False, max_iter = 3000, max_noimp = 1000, print_every = 100,
-                max_wu = 300, ro_wu = 1.0 ):
+                warmup = "mattia", max_wu = 300, ro_wu = 1.0 ):
         """
         Initialize.
 
@@ -41,6 +43,7 @@ class AntColony (object):
         :attr max_noimp: Maximum number of iterations without improvement.
         :attr print_every: The iterations between a log and the next one.
 
+        :attr warmup: The initialisation algorithm.
         :attr max_wu: Maximum number of iterations for the Warm-Up process.
         :attr ro_wu: The value of ro used during the Warm-Up.
 
@@ -64,6 +67,7 @@ class AntColony (object):
         self.max_noimp = max_noimp
         self.print_every = print_every
         self.pher_init = pher_init
+        self.warmup = warmup
         self.max_wu = max_wu
         self.ro_wu = ro_wu
 
@@ -83,16 +87,26 @@ class AntColony (object):
         self.computational_time = 0.0
 
         # Eventual warmup
+        # ----------------------------------------------------------------------
         alpha, beta, Q, ro_wu = self.alpha, self.beta, self.Q, self.ro_wu
-        for _ in range(max_wu):
-            C = distances + np.identity(distances.shape[0])
-            desirability = self.pheromone**alpha * (1 / C)**beta
-            P = desirability / desirability.sum(axis=1)
-            U = Q / C
-            self.pheromone += U * P
-            self.pheromone *= ro_wu
+        if warmup == "mattia":
+            for _ in range(max_wu):
+                C = distances + np.identity(distances.shape[0])
+                desirability = self.pheromone**alpha * (1 / C)**beta
+                P = desirability / desirability.sum(axis=1)
+                U = Q / C
+                self.pheromone += U * P
+                self.pheromone *= ro_wu
+        if warmup == "qiguo":
+            minimal_spanning_tree = MinimalSpanningTree(distances)
+            for i, j in minimal_spanning_tree.edges:
+                print(i, j)
+                self.pheromone[i, j] **= 1 / beta
+                self.pheromone[j, i] **= 1 / beta
+        else:
+            print("[Warning] No warmup used.")
 
-        #print(self.pheromone)
+        # ----------------------------------------------------------------------
 
 
     def reset (self):
@@ -113,13 +127,6 @@ class AntColony (object):
         self.history = collections.deque((self.vbest,))
         self.computations = 0
         self.computational_time = 0.0
-
-
-    def warmup (self):
-        """
-        This method is the warmup designed for the pheromone matrix.
-        """
-        pass
 
 
     def _evap (self):

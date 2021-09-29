@@ -1,7 +1,13 @@
 import aco
 import tsp
+import mst
+import warehouse
 
 import random
+
+#import sys
+#import numpy as np
+#np.set_printoptions(threshold=sys.maxsize)
 
 
 def random_walk (dists, length=25):
@@ -15,10 +21,13 @@ def random_walk (dists, length=25):
 dists = tsp.distance_matrix
 path = random_walk(dists, 10)
 
-a = aco.AntColony(dists, path, max_wu=400)
-_, cost_wu = a.run()
 
-a = aco.AntColony(dists, path, max_wu=0)
-_, cost = a.run()
+a = aco.AntColony(dists, path, warmup="qiguo")
+print(a.pheromone)
 
-print(cost, cost_wu)
+#_, cost_wu = a.run()
+
+#a = aco.AntColony(dists, path, max_wu=0)
+#_, cost = a.run()
+
+#print(cost, cost_wu)
