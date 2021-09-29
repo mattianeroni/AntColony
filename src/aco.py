@@ -13,7 +13,6 @@ def _compute_distance (lst, distances):
     :param lst: The picking list
     :param distances: The distance matrix
     :return: The distance ran.
-
     """
     return sum(distances[lst[i]][lst[i+1]] for i in range(len(lst) - 1)) + distances[lst[-1]][0] + distances[0][lst[0]]
 
@@ -24,9 +23,9 @@ class AntColony (object):
     This is the Ant Colony Optimization algorithm with Warm-Up.
     """
     def __init__ (self, distances, picking_list,
-                pher_init = 0.1, ro = 0.9, Q = 2.0, alpha = 1.0, beta = 5.0,
+                pher_init = 0.1, ro = 0.9, Q = 100.0, alpha = 1.0, beta = 5.0,
                 evaporate = False, max_iter = 3000, max_noimp = 1000, print_every = 100,
-                max_iter_wu = 300, ro_wu = 1.0 ):
+                max_wu = 300, ro_wu = 1.0 ):
         """
         Initialize.
 
@@ -42,7 +41,7 @@ class AntColony (object):
         :attr max_noimp: Maximum number of iterations without improvement.
         :attr print_every: The iterations between a log and the next one.
 
-        :attr max_iter_wu: Maximum number of iterations for the Warm-Up process.
+        :attr max_wu: Maximum number of iterations for the Warm-Up process.
         :attr ro_wu: The value of ro used during the Warm-Up.
 
         :attr pheromone: The pheromone on each arch.
@@ -51,7 +50,7 @@ class AntColony (object):
         :attr history: The history of the best solutions found.
         :attr computations: The number of solutions explored before finding the best.
 
-        :param pher_init: The initial pheromone (it is always 0 on arcs (i,j) where i == j)
+        :param pher_init: The initial pheromone (it is always 0 on arcs (i,j) where i == j).
 
         """
         self.distances = distances
@@ -65,7 +64,7 @@ class AntColony (object):
         self.max_noimp = max_noimp
         self.print_every = print_every
         self.pher_init = pher_init
-        self.max_iter_wu = max_iter_wu
+        self.max_wu = max_wu
         self.ro_wu = ro_wu
 
         # Initialize the best
@@ -83,8 +82,17 @@ class AntColony (object):
         self.computations = 0
         self.computational_time = 0.0
 
-        for _ in range(max_iter_wu):
-            
+        # Eventual warmup
+        alpha, beta, Q, ro_wu = self.alpha, self.beta, self.Q, self.ro_wu
+        for _ in range(max_wu):
+            C = distances + np.identity(distances.shape[0])
+            desirability = self.pheromone**alpha * (1 / C)**beta
+            P = desirability / desirability.sum(axis=1)
+            U = Q / C
+            self.pheromone += U * P
+            self.pheromone *= ro_wu
+
+        #print(self.pheromone)
 
 
     def reset (self):
@@ -152,7 +160,7 @@ class AntColony (object):
         :return: The selected node.
 
         """
-        p = 0.0
+        prob = 0.0
         r = random.random()
         options.sort(key=operator.itemgetter(1), reverse=True)
         total = sum(desirability for _, desirability in options)
