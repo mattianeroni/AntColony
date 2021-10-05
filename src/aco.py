@@ -3,6 +3,7 @@ import numpy as np
 import time
 import operator
 import collections
+import itertools
 
 from mst import MinimalSpanningTree
 
@@ -79,6 +80,8 @@ class AntColony (object):
         # Initialize the pheromone
         self.pheromone = np.full(distances.shape, pher_init)
         np.fill_diagonal(self.pheromone, 0)
+        # Eventual warmup procedure
+        self.warmup_process(warmup)
 
         # Initialize the history and the number of iterations needed to find the best
         # and other statistics.
@@ -86,9 +89,15 @@ class AntColony (object):
         self.computations = 0
         self.computational_time = 0.0
 
-        # Eventual warmup
-        # ----------------------------------------------------------------------
+
+
+
+    def warmup_process (self, warmup):
+        """
+        The warmup procedure to initialise the pheromone matrix.
+        """
         alpha, beta, Q, ro_wu = self.alpha, self.beta, self.Q, self.ro_wu
+        distances = self.distances
         if warmup == "mattia":
             for _ in range(max_wu):
                 C = distances + np.identity(distances.shape[0])
@@ -97,16 +106,18 @@ class AntColony (object):
                 U = Q / C
                 self.pheromone += U * P
                 self.pheromone *= ro_wu
-        if warmup == "qiguo":
+        elif warmup == "qiguo":
             minimal_spanning_tree = MinimalSpanningTree(distances)
             for i, j in minimal_spanning_tree.edges:
-                print(i, j)
                 self.pheromone[i, j] **= 1 / beta
                 self.pheromone[j, i] **= 1 / beta
-        else:
-            print("[Warning] No warmup used.")
+        elif warmup == "bellaachia":
+            for i, j in itertools.combinations(range(distances.shape[0]), 2):
+                self.pheromone[i, j] = 1 / (distances[i,:].sum() - distances[i, j])
+                self.pheromone[j, i] = 1 / (distances[j,:].sum() - distances[j, i])
 
-        # ----------------------------------------------------------------------
+        else:
+            raise Exception("The warmup required doesn't exist.")
 
 
     def reset (self):
@@ -121,12 +132,15 @@ class AntColony (object):
         # Initialize the pheromone
         self.pheromone = np.full(distances.shape, pher_init)
         np.fill_diagonal(self.pheromone, 0)
+        # Eventual warmup procedure
+        self.warmup_process(warmup)
 
         # Initialize the history and the number of iterations needed to find the best
         # and other statistics.
         self.history = collections.deque((self.vbest,))
         self.computations = 0
         self.computational_time = 0.0
+
 
 
     def _evap (self):

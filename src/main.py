@@ -22,7 +22,7 @@ dists = tsp.distance_matrix
 path = random_walk(dists, 10)
 
 
-a = aco.AntColony(dists, path, warmup="qiguo")
+a = aco.AntColony(dists, path, warmup="bellaachia")
 print(a.pheromone)
 
 #_, cost_wu = a.run()
