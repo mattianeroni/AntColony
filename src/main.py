@@ -24,10 +24,3 @@ path = random_walk(dists, 10)
 
 a = aco.AntColony(dists, path, warmup="bellaachia")
 print(a.pheromone)
-
-#_, cost_wu = a.run()
-
-#a = aco.AntColony(dists, path, max_wu=0)
-#_, cost = a.run()
-
-#print(cost, cost_wu)

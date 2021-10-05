@@ -90,15 +90,13 @@ class AntColony (object):
         self.computational_time = 0.0
 
 
-
-
     def warmup_process (self, warmup):
         """
         The warmup procedure to initialise the pheromone matrix.
         """
         alpha, beta, Q, ro_wu = self.alpha, self.beta, self.Q, self.ro_wu
         distances = self.distances
-        if warmup == "mattia":
+        if warmup == "Mattia":
             for _ in range(max_wu):
                 C = distances + np.identity(distances.shape[0])
                 desirability = self.pheromone**alpha * (1 / C)**beta
@@ -106,12 +104,12 @@ class AntColony (object):
                 U = Q / C
                 self.pheromone += U * P
                 self.pheromone *= ro_wu
-        elif warmup == "qiguo":
+        elif warmup == "Dai":
             minimal_spanning_tree = MinimalSpanningTree(distances)
             for i, j in minimal_spanning_tree.edges:
                 self.pheromone[i, j] **= 1 / beta
                 self.pheromone[j, i] **= 1 / beta
-        elif warmup == "bellaachia":
+        elif warmup == "Bellaachia":
             for i, j in itertools.combinations(range(distances.shape[0]), 2):
                 self.pheromone[i, j] = 1 / (distances[i,:].sum() - distances[i, j])
                 self.pheromone[j, i] = 1 / (distances[j,:].sum() - distances[j, i])
