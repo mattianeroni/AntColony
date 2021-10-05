@@ -25,8 +25,8 @@ class AntColony (object):
     """
     This is the Ant Colony Optimization algorithm with Warm-Up.
     """
-    def __init__ (self, distances, picking_list,
-                pher_init = 0.1, ro = 0.9, Q = 100.0, alpha = 1.0, beta = 2.0,
+    def __init__ (self, distances,
+                pher_init = 0.1, ro = 0.5, Q = 100.0, alpha = 1.0, beta = 2.0,
                 evaporate = False, max_iter = 3000, max_noimp = 1000, print_every = 100,
                 warmup = "mattia", max_wu = 300, ro_wu = 1.0 ):
         """
@@ -58,7 +58,7 @@ class AntColony (object):
 
         """
         self.distances = distances
-        self.picking_list = picking_list
+        self.picking_list = None    # This is set when method run is called
         self.ro = ro
         self.Q = Q
         self.alpha = alpha
@@ -215,14 +215,16 @@ class AntColony (object):
         return new_sol, vnew_sol
 
 
-    def run (self, verbose = False):
+    def run (self, picking_list, verbose = False):
         """
         This method represents the execution of the algorithm.
 
+        :param picking_list: The tour of nodes for which the problem must be solved.
         :param verbose: If TRUE a log takes place every <print_every> iterations.
         :return: The best solution and its cost.
 
         """
+        self.picking_list = list(picking_list)
         start = time.time()
         noimp = 0
         for i in range (self.max_iter):
