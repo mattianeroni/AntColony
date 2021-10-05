@@ -83,6 +83,10 @@ class AntColony (object):
         # Eventual warmup procedure
         self.warmup_process(warmup)
 
+        # Save the state of pheromone after warmup
+        # to avoid recalculating it.
+        self.saved_pheromone = self.pheromone.copy()
+
         # Initialize the history and the number of iterations needed to find the best
         # and other statistics.
         self.history = collections.deque((self.vbest,))
@@ -114,6 +118,9 @@ class AntColony (object):
                 self.pheromone[i, j] = 1 / (distances[i,:].sum() - distances[i, j])
                 self.pheromone[j, i] = 1 / (distances[j,:].sum() - distances[j, i])
 
+        elif warmup == "none":
+            pass
+
         else:
             raise Exception("The warmup required doesn't exist.")
 
@@ -128,10 +135,7 @@ class AntColony (object):
         self.vbest = _compute_distance (self.best, distances)
 
         # Initialize the pheromone
-        self.pheromone = np.full(distances.shape, pher_init)
-        np.fill_diagonal(self.pheromone, 0)
-        # Eventual warmup procedure
-        self.warmup_process(warmup)
+        self.pheromone = self.saved_pheromone.copy()
 
         # Initialize the history and the number of iterations needed to find the best
         # and other statistics.

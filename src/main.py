@@ -1,7 +1,6 @@
-import aco
-import tsp
-import mst
 import warehouse
+from tsp import TSP
+from aco import AntColony
 
 import random
 
@@ -18,9 +17,15 @@ def random_walk (dists, length=25):
     return random.sample(options, length)
 
 
-dists = tsp.distance_matrix
-path = random_walk(dists, 10)
+
+for i in range(5):
+    problem = TSP(nodes = 60, space_size = (1000, 1000))
+    myaco =
+    for size in range(20, 70, 10):
+        tour = random_walk(problem.distance_matrix, size)
 
 
-a = aco.AntColony(dists, path, warmup="bellaachia")
-print(a.pheromone)
+
+
+#a = aco.AntColony(dists, path, warmup="bellaachia")
+#print(a.pheromone)

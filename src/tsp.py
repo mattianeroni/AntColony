@@ -11,14 +11,11 @@ import networkx.algorithms.shortest_paths.dense as nxalg
 import random
 import itertools
 import math
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
-# Parameters:
-# NODES : The number of nodes in the graph.
-# SPACE_SIZE : The size of the area in which these nodes are placed.
-NODES = 30
-SPACE_SIZE = (1000, 1000)
-
+# Default parameters:
+# NODES = 30: The number of nodes in the graph.
+# SPACE_SIZE = (1000,1000) : The size of the area in which these nodes are placed.
 
 def euclidean (x, y):
     """
@@ -28,26 +25,37 @@ def euclidean (x, y):
     return int(math.sqrt( (x[0] - y[0])**2 + (x[1] - y[1])**2 ))
 
 
-# The graph instance
-G = nx.Graph()
 
-# The nodes list
-nodes = dict()
+class TSP (object):
+    """
+    An instance of this class represents a gereric graph for
+    Travelling Salesman Problem.
+    """
 
-# Create nodes
-for i in range(NODES):
-    nodes[i] = (random.randint(0, SPACE_SIZE[0]), random.randint(0, SPACE_SIZE[1]))
-    G.add_node(i)
+    def __init__ (self, nodes = 30, space_size = (1000, 1000)):
+        # The graph instance
+        G = nx.Graph()
 
-# Create edges
-for i, j in itertools.permutations(range(NODES), 2):
-    G.add_edge(i, j, weight=euclidean(nodes[i], nodes[j]))
+        # The nodes list
+        nodes_dict = dict()
+
+        # Create nodes
+        for i in range(nodes):
+            nodes_dict[i] = (random.randint(0, space_size[0]), random.randint(0, space_size[1]))
+            G.add_node(i)
+
+        # Create edges
+        for i, j in itertools.permutations(range(nodes), 2):
+            G.add_edge(i, j, weight=euclidean(nodes_dict[i], nodes_dict[j]))
+
+        self.G = G
+        self.nodes = nodes_dict
+        self.distance_matrix = nxalg.floyd_warshall_numpy(G)
 
 
-# Plot the graph
-#nx.draw(G, pos=nodes, with_labels=True, font_weight='bold')
-#plt.show()
-
-# Set the distance matrix
-distance_matrix = nxalg.floyd_warshall_numpy(G)
-#print(distance_matrix)
+    def plot (self):
+        """
+        This method plot the generated graph.
+        """
+        nx.draw(self.G, pos=self.nodes, with_labels=True, font_weight='bold')
+        plt.show()
