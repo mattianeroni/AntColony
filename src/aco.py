@@ -26,9 +26,9 @@ class AntColony (object):
     This is the Ant Colony Optimization algorithm with Warm-Up.
     """
     def __init__ (self, distances,
-                pher_init = 0.1, ro = 0.5, Q = 100.0, alpha = 1.0, beta = 2.0,
+                pher_init = 0.1, ro = 0.9, Q = 5.0, alpha = 1.0, beta = 2.0,
                 evaporate = False, max_iter = 3000, max_noimp = 1000, print_every = 100,
-                warmup = "mattia", max_wu = 300, ro_wu = 1.0 ):
+                warmup = "Mattia", max_wu = 300, ro_wu = 1.0 ):
         """
         Initialize.
 
@@ -58,7 +58,6 @@ class AntColony (object):
 
         """
         self.distances = distances
-        self.picking_list = None    # This is set when method run is called
         self.ro = ro
         self.Q = Q
         self.alpha = alpha
@@ -72,16 +71,16 @@ class AntColony (object):
         self.max_wu = max_wu
         self.ro_wu = ro_wu
 
-        # Initialize the best
-        self.best = list(self.picking_list)
-        random.shuffle(self.best)
-        self.vbest = _compute_distance (self.best, distances)
+        # Initialise a NULL best solution and NULL picking list for the moment
+        self.best = None
+        self.vbest = 0
+        self.picking_list = None
 
         # Initialize the pheromone
         self.pheromone = np.full(distances.shape, pher_init)
         np.fill_diagonal(self.pheromone, 0)
         # Eventual warmup procedure
-        self.warmup_process(warmup)
+        self.warmup_process(max_wu, warmup)
 
         # Save the state of pheromone after warmup
         # to avoid recalculating it.
@@ -94,14 +93,14 @@ class AntColony (object):
         self.computational_time = 0.0
 
 
-    def warmup_process (self, warmup):
+    def warmup_process (self, maxiter, warmup):
         """
         The warmup procedure to initialise the pheromone matrix.
         """
         alpha, beta, Q, ro_wu = self.alpha, self.beta, self.Q, self.ro_wu
         distances = self.distances
         if warmup == "Mattia":
-            for _ in range(max_wu):
+            for _ in range(maxiter):
                 C = distances + np.identity(distances.shape[0])
                 desirability = self.pheromone**alpha * (1 / C)**beta
                 P = desirability / desirability.sum(axis=1)
@@ -132,7 +131,7 @@ class AntColony (object):
         # Initialize the best
         self.best = list(self.picking_list)
         random.shuffle(self.best)
-        self.vbest = _compute_distance (self.best, distances)
+        self.vbest = _compute_distance (self.best, self.distances)
 
         # Initialize the pheromone
         self.pheromone = self.saved_pheromone.copy()
@@ -224,7 +223,14 @@ class AntColony (object):
         :return: The best solution and its cost.
 
         """
+        # Initialise the picking list
         self.picking_list = list(picking_list)
+        # Initialize the best
+        self.best = list(self.picking_list)
+        random.shuffle(self.best)
+        self.vbest = _compute_distance (self.best, self.distances)
+
+        # Start the effective execution
         start = time.time()
         noimp = 0
         for i in range (self.max_iter):
